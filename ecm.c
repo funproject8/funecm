@@ -7,6 +7,7 @@
  * 2014/10/30 mpz_t f追加
  *            gcd処理追加
  * 2014/11/02 引数の一部をconstに変更
+ * testtesttest
  */
 
 #include <stdio.h>
