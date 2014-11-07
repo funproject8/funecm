@@ -6,6 +6,7 @@
  * 2014/11/01 誤字修正(null, unsinedなど)
  *            define修正
  * 2014/11/07 出力, loop処理追加
+ * branch test
  */
 
 #include <stdio.h>
