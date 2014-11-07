@@ -5,6 +5,7 @@
  * 2014/10/30 新規作成
  * 2014/11/01 誤字修正(null, unsinedなど)
  *            define修正
+ * 2014/11/07 出力, loop処理追加
  */
 
 #include <stdio.h>
