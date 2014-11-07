@@ -7,7 +7,6 @@
  * 2014/10/30 mpz_t f追加
  *            gcd処理追加
  * 2014/11/02 引数の一部をconstに変更
- * testtesttest
  */
 
 #include <stdio.h>
@@ -62,7 +61,7 @@ void ecm(mpz_t f, const mpz_t N, const unsigned long int A, const unsigned long 
 		for (i = 1; i <= e; i++) {
 			scalar(pP, pP, p, a, N);
 			mpz_gcd(f, pP->Z, N);
-			gmp_printf("gcd(%Zd, %Zd) = %Zd\n", pP->Z, N, f);
+			//gmp_printf("gcd(%Zd, %Zd) = %Zd\n", pP->Z, N, f);
 			if ( mpz_cmp_ui(f, 1) != 0) {
 				goto FOUND;
 			}
