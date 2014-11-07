@@ -34,12 +34,16 @@ int main (int argc, char *argv[])
 
 	/* オプション処理 */
 	int opt;
-	while ((opt = getopt (argc, argv, "h")) != -1) {
+	int loop = 0;
+	while ((opt = getopt (argc, argv, "hl")) != -1) {
 		switch (opt) {
 			case 'h':
 				fprintf(stdout, "Usage: funecm [options] [composite number] [k]\n");
 				fprintf(stdout, "-h: help\n");
 				return 0;
+				break;
+			case 'l':
+				loop = 1;
 				break;
 			default:
 				fprintf(stderr, "No such option\n");
@@ -95,6 +99,8 @@ int main (int argc, char *argv[])
 	clock_t A_end;
 	clock_t total_end;
 
+RESTART:
+
 	total_start = clock();
 	unsigned long int A;
 	for (A = 1; A < A_LOOP; A++) {
@@ -136,8 +142,12 @@ int main (int argc, char *argv[])
 				goto END;
 		}
 	}
-
 END:
+	if ((loop == 1) && mpz_probab_prime_p(cofactor, 25) == 0) {
+		mpz_set(N, cofactor);
+		printf("-------------------------RESTART-------------------------\n");
+		goto RESTART;
+	}
 	/* メモリの解放*/
 	affine_point_clear(P);
 	mpz_clear(factor);
