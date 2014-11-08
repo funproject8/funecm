@@ -6,7 +6,7 @@
  * 2014/11/01 誤字修正(null, unsinedなど)
  *            define修正
  * 2014/11/07 出力, loop処理追加
- * branch test
+ * 2014/11/08 並列化実装
  */
 
 #include <stdio.h>
@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <omp.h>
 #include "point.h"
 
 #define A_LOOP 10000
@@ -101,54 +102,60 @@ int main (int argc, char *argv[])
 	clock_t A_end;
 	clock_t total_end;
 
-RESTART:
+	int found = 0;
 
 	total_start = clock();
 	unsigned long int A;
-	for (A = 1; A < A_LOOP; A++) {
-		A_start = clock();
+	#pragma omp parallel num_threads(2)
+	{
+		#pragma omp for
+		for (A = 1; A < A_LOOP; A++) {
+			if (found == 0) {
+				A_start = clock();
 
-		ecm(factor, N, A, k);
-		mpz_divexact(cofactor, N, factor);
-		/* 因数が1又はNだった場合係数を変えてやり直す */
-		if (mpz_cmp_ui(factor, 1) == 0 || mpz_cmp(factor, N) == 0) {
-			A_end = clock();
-			printf("stage1 time: %.3f seconds\n", (double)(A_end - A_start) / CLOCKS_PER_SEC);
-			printf("factor not found\n");
-			printf("--------------------------------------------------\n");
-			continue;
+				ecm(factor, N, A, k);
+				mpz_divexact(cofactor, N, factor);
+				/* 因数が1又はNだった場合係数を変えてやり直す */
+				if (mpz_cmp_ui(factor, 1) == 0 || mpz_cmp(factor, N) == 0) {
+					A_end = clock();
+					printf("stage1 time: %.3f seconds\n", (double)(A_end - A_start) / CLOCKS_PER_SEC);
+					printf("factor not found\n");
+					printf("--------------------------------------------------\n");
+					continue;
+				} else {
+					found = 1;
+				}
+				mpz_get_str(digits, 10, factor);
+				A_end = clock();
+				total_end = clock();
+				printf("stage1 time: %.3f seconds\n", (double)(A_end - A_start) / CLOCKS_PER_SEC);
+				printf("total: %.3f seconds\n", (double)(total_end - total_start) / CLOCKS_PER_SEC);
+				/* 終了ステータス */
+				switch (mpz_probab_prime_p(factor, 25)) {
+					case 2:
+						gmp_printf("definite prime factor found: %Zd  ", factor);
+						printf("digits: %d\n", strlen(digits));
+						gmp_printf("cofactor: %Zd\n", cofactor);
+						break;
+					case 1:
+						gmp_printf("probable prime factor found: %Zd  ", factor);
+						printf("digits: %d\n", strlen(digits));
+						gmp_printf("cofactor: %Zd\n", cofactor);
+						break;
+					case 0:
+						gmp_printf("composite factor found: %Zd  ", factor);
+						printf("digits: %d\n", strlen(digits));
+						gmp_printf("cofactor: %Zd\n", cofactor);
+						break;
+					default:
+						break;
+				}
+				if ((loop == 1) && mpz_probab_prime_p(cofactor, 25) == 0) {
+					mpz_set(N, cofactor);
+					printf("-------------------------RESTART-------------------------\n");
+				}
+			}
 		}
-		mpz_get_str(digits, 10, factor);
-		A_end = clock();
-		total_end = clock();
-		printf("stage1 time: %.3f seconds\n", (double)(A_end - A_start) / CLOCKS_PER_SEC);
-		printf("total: %.3f seconds\n", (double)(total_end - total_start) / CLOCKS_PER_SEC);
-		/* 終了ステータス */
-		switch (mpz_probab_prime_p(factor, 25)) {
-			case 2:
-				gmp_printf("definite prime factor found: %Zd  ", factor);
-				printf("digits: %d\n", strlen(digits));
-				gmp_printf("cofactor: %Zd\n", cofactor);
-				goto END;
-			case 1:
-				gmp_printf("probable prime factor found: %Zd  ", factor);
-				printf("digits: %d\n", strlen(digits));
-				gmp_printf("cofactor: %Zd\n", cofactor);
-				goto END;
-			case 0:
-				gmp_printf("composite factor found: %Zd  ", factor);
-				printf("digits: %d\n", strlen(digits));
-				gmp_printf("cofactor: %Zd\n", cofactor);
-				goto END;
-			default:
-				goto END;
-		}
-	}
-END:
-	if ((loop == 1) && mpz_probab_prime_p(cofactor, 25) == 0) {
-		mpz_set(N, cofactor);
-		printf("-------------------------RESTART-------------------------\n");
-		goto RESTART;
 	}
 	/* メモリの解放*/
 	affine_point_clear(P);
